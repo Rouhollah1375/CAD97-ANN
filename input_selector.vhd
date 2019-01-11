@@ -32,36 +32,58 @@ use IEEE.NUMERIC_STD.ALL;
 --use UNISIM.VComponents.all;
 
 entity input_selector is
-	generic (input_size: natural := 4); -- TODO remove this part
+	generic (input_size: natural := 63); -- TODO remove this part
 	port(
 		input_matrix: in matrix1d(0 to input_size);
 		weight_matrix: in matrix1d(0 to input_size);
-		clk, rst: in std_logic;
+		in_size: in std_logic_vector(7 downto 0);
+		clk, rst, start: in std_logic;
 		input, weight: out fixed_point;
-		done: out std_logic
+		done, reg_enable, mac_rst: out std_logic
 	);
 end input_selector;
 
 architecture Behavioral of input_selector is	
+	signal working: std_logic;
 
 begin
 	process(clk, rst)
 		VARIABLE counter: integer := 0;
 	BEGIN
 		IF RISING_EDGE(clk) THEN
+			mac_rst <= '0';
+			IF start = '1' THEN
+				working <= '1';
+				mac_rst <= '1';
+				counter := 0;
+			END IF;
 			IF rst = '1' THEN
+				mac_rst <= '1';
 				counter := 0;
 			ELSE
 				done <= '0';
-				counter := counter + 1;
-				IF counter = input_size + 1 THEN
-					done <= '1';
+				reg_enable <= '1';
+				-- counter := counter WHEN working = '0' else counter + 1;
+				IF (working = '0') THEN
 					counter := 0;
+				ELSE
+					counter := counter + 1;
 				END IF;
-				input.sign <= input_matrix(counter)(15);
-				input.absolute_value <= input_matrix(counter)(14 downto 0);
-				weight.sign <= weight_matrix(counter)(15);
-				weight.absolute_value <= weight_matrix(counter)(14 downto 0);
+				
+				IF counter < in_size + 1 THEN
+					input.sign <= input_matrix(counter)(15);
+					input.absolute_value <= input_matrix(counter)(14 downto 0);
+					weight.sign <= weight_matrix(counter)(15);
+					weight.absolute_value <= weight_matrix(counter)(14 downto 0);				
+				ELSIF counter = in_size + 1 THEN
+					reg_enable <= '0';
+					done <= '1';
+				ELSIF counter = in_size + 2 THEN
+					mac_rst <= '1';
+				ELSIF counter = in_size + 3 THEN
+					counter := 0;
+					working <= '0';
+				END IF;
 			END IF;
 		END IF;
 	END PROCESS;

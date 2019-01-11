@@ -20,7 +20,7 @@ END ENTITY mac;
 ARCHITECTURE behavioral OF mac IS
 	COMPONENT reg PORT
 	(
-		clk, rst : IN STD_LOGIC;
+		clk, rst, en : IN STD_LOGIC;
 		input : IN fixed_point;
 		output : OUT fixed_point
 	);
@@ -73,6 +73,7 @@ BEGIN
 	(
 		clk => clk,
 		rst => rst,
+		en => '1',
 		input => adder_out,
 		output => accumulator_out
 	);

@@ -35,12 +35,14 @@ use WORK.ALL;
 --type vector is array(integer range <>) of std_logic_vector(15 downto 0);
 
 entity Perceptron is
-	generic (input_size: natural := 4);
+	generic (input_size: natural := 63);
 	port (
 		input_vector: in matrix1d(0 to input_size);		-- the last element of this matrix is for the bias
 		weight_vector: in matrix1d(0 to input_size);		-- the last element of this matrix is for the bias
-		clk, rst: in std_logic;
-		output: out fixed_point
+		in_size: in std_logic_vector(7 downto 0);
+		clk, rst, start: in std_logic;
+		output: out fixed_point;
+		done: out std_logic
 	);
 end Perceptron;
 
@@ -56,55 +58,48 @@ architecture Behavioral of Perceptron is
 	
 	COMPONENT reg PORT
 	(
-		clk, rst : IN STD_LOGIC;
+		clk, rst, en : IN STD_LOGIC;
 		input : IN fixed_point;
 		output : OUT fixed_point
 	);
 	END COMPONENT;
 	for all: reg use entity work.reg(behavarioal);
 	
-	COMPONENT in_sel PORT
-	(
+	COMPONENT in_sel
+	port(
 		input_matrix: in matrix1d(0 to input_size);
 		weight_matrix: in matrix1d(0 to input_size);
-		clk, rst: in std_logic;
+		in_size: in std_logic_vector(7 downto 0);
+		clk, rst, start: in std_logic;
 		input, weight: out fixed_point;
-		done: out std_logic
+		done, reg_enable, mac_rst: out std_logic
 	);
 	END COMPONENT;
 	for all: in_sel use entity work.input_selector(Behavioral);
 	
-	signal a, b, macout, relu: fixed_point;
-	signal get_input_done: std_logic;
+	signal a, b, macout: fixed_point;
+	signal get_input_done, reg_enable, mac_rst, done_signal: std_logic;
 begin
-	c1: mac port map(
-		clk, rst, a, b, macout
+	my_mac: mac port map(
+		clk, mac_rst, a, b, macout
 	);
 	
-	c2: in_sel port map(
-		input_vector, weight_vector, clk, rst, a, b, get_input_done
+	
+	my_in_sel: in_sel port map(
+		input_vector, weight_vector, in_size, clk, rst, start, a, b, get_input_done, reg_enable, mac_rst
 	);
-				
-	PROCESS (macout)
-		variable relu_out : fixed_point;
-	BEGIN
-		IF (macout.sign = '1') THEN
-			relu_out.sign := '0';
-			relu_out.absolute_value := "000000000000000";
-		ELSE
-			relu_out := macout;
-		END IF;
-		relu.sign <= relu_out.sign;
-		relu.absolute_value <= relu_out.absolute_value;
-	END PROCESS;
 	
 	output_register : reg PORT MAP
 	(
-		clk => get_input_done,
+		clk => clk,
 		rst => rst,
-		input => relu,
+		en => done_signal,
+		input => macout,
 		output => output
 	);
+
+	done_signal <= not reg_enable;
+	done <= done_signal;
 
 end Behavioral;
 

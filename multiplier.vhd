@@ -31,7 +31,8 @@ ARCHITECTURE behavioral OF multiplier IS
 
 BEGIN
 	result <= (a.absolute_value or "000000000000001") * (b.absolute_value or "000000000000001");
-	out_res.absolute_value <= result(29 downto 15);
+	-- result <= (a.absolute_value) * (b.absolute_value);
+	out_res.absolute_value <= result(20 downto 6);
 	out_res.sign <= '0' when a.sign = b.sign else '1';
 	output <= out_res;
 	-- overflow <= or_vector(result(a'LENGTH * 2 - 1 DOWNTO a'LENGTH));

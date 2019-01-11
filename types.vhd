@@ -25,8 +25,13 @@ package types is
 	end record;
 --	type matrix1d is array (natural range <>) of fixed_point;
 	type matrix1d is array (integer range <>) of std_logic_vector(15 downto 0);
+	type matrix2d is array (integer range <>, integer range <>) of std_logic_vector(15 downto 0);
+	
+	type fsm_state is (idle, input_layer, hidden_layer_start, hidden_layer_working, output_layer_start, output_layer_working,
+							 count_up, local_done, global_done);
 
 -- Declare constants
+constant max_input_size : integer := 64;
 --
 -- constant <constant_name>		: time := <time_unit> ns;
 -- constant <constant_name>		: integer := <value;
